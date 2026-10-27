@@ -1,40 +1,48 @@
-﻿using NUnit.Framework;
+﻿using FluentAssertions;
+using FluentAssertions.Equivalency;
+using NUnit.Framework;
 using NUnit.Framework.Legacy;
 
 namespace HomeExercise.Tasks.ObjectComparison;
+
 public class ObjectComparison
 {
+    // ReSharper disable once InconsistentNaming
+    private static readonly Person _VasiliTheThirdTsar = 
+        new ("Vasili III of Russia", 28, 170, 60, null!);   
+    
+    // ReSharper disable once InconsistentNaming
+    private static readonly Person _IvanTheTerribleTsar = 
+        new ("Ivan IV The Terrible", 54, 170, 70, _VasiliTheThirdTsar);
+    
     [Test]
     [Description("Проверка текущего царя")]
-    [Category("ToRefactor")]
-    public void CheckCurrentTsar()
+    public void Current_tsar_is_equal_to_expected() //Тесты проименовал по совету Владимира Хорикова
+                                                    //(значимый деятель C#-мира, обладает Microsoft MVP
+                                                    //(т.е. его большой вклад признан Microsoft))
+                                                    //из книги "Принципы юнит-тестирования".
+                                                    //Преподаватель, когда я спросил его о таком стиле именования,
+                                                    //ответил, что у них "пишут названия тестов на русском".
+                                                    //Хотел бы получить ваш комментарий. 
     {
-        var actualTsar = TsarRegistry.GetCurrentTsar();
+        Person actualTsar = TsarRegistry.GetCurrentTsar();
+        Person expectedTsar = _IvanTheTerribleTsar;
 
-        var expectedTsar = new Person("Ivan IV The Terrible", 54, 170, 70,
-            new Person("Vasili III of Russia", 28, 170, 60, null));
-
-        // Перепишите код на использование Fluent Assertions.
-        ClassicAssert.AreEqual(actualTsar.Name, expectedTsar.Name);
-        ClassicAssert.AreEqual(actualTsar.Age, expectedTsar.Age);
-        ClassicAssert.AreEqual(actualTsar.Height, expectedTsar.Height);
-        ClassicAssert.AreEqual(actualTsar.Weight, expectedTsar.Weight);
-
-        ClassicAssert.AreEqual(expectedTsar.Parent!.Name, actualTsar.Parent!.Name);
-        ClassicAssert.AreEqual(expectedTsar.Parent.Age, actualTsar.Parent.Age);
-        ClassicAssert.AreEqual(expectedTsar.Parent.Height, actualTsar.Parent.Height);
-        ClassicAssert.AreEqual(expectedTsar.Parent.Parent, actualTsar.Parent.Parent);
+        actualTsar.Should()
+            .BeEquivalentTo(expectedTsar, config => config
+            .Excluding((IMemberInfo member) => member.Name == nameof(Person.Id)));
     }
 
     [Test]
     [Description("Альтернативное решение. Какие у него недостатки?")]
-    public void CheckCurrentTsar_WithCustomEquality()
+    public void Current_tsar_is_equal_to_expected_with_custom_equality()
     {
-        var actualTsar = TsarRegistry.GetCurrentTsar();
-        var expectedTsar = new Person("Ivan IV The Terrible", 54, 170, 70,
-            new Person("Vasili III of Russia", 28, 170, 60, null));
+        Person actualTsar = TsarRegistry.GetCurrentTsar();
+        Person expectedTsar = _IvanTheTerribleTsar;
 
-        // Какие недостатки у такого подхода? 
+        // Какие недостатки у такого подхода?
+        //Это решение нарушает OCP. Если в Person появится новое поле, придётся менять AreEqual.
+        //Моё решение обеспечивает расширяемость.
         ClassicAssert.True(AreEqual(actualTsar, expectedTsar));
     }
 
@@ -49,4 +57,5 @@ public class ObjectComparison
             && actual.Weight == expected.Weight
             && AreEqual(actual.Parent, expected.Parent);
     }
+    
 }
