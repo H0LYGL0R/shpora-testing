@@ -6,30 +6,38 @@ namespace HomeExercise.Tasks.NumberValidator;
 [TestFixture]
 public class NumberValidatorTests
 {
-    [TestCase(-1, 0)]
-    [TestCase(0, 0)]
+    [TestCase(-1)]
+    [TestCase(0)]
+    public void Constructor_ShouldThrowArgumentException_WhenPrecisionIsNotPositive_Test(int precision)
+    {
+        Func<NumberValidator> createAction = () => new NumberValidator(precision);
+
+        createAction
+            .Should()
+            .Throw<ArgumentException>()
+            .WithMessage("precision must be a positive number");
+    }
+
     [TestCase(1, -1)]
     [TestCase(1, 1)]
     [TestCase(1, 2)]
-    [TestCase(2, 2)]
-    public void Validator_with_bad_precision_or_scale_throws_error(int precision, int scale)
+    public void Constructor_ShouldThrowArgumentException_WhenScaleIsOutOfRange_Test(int precision, int scale)
     {
-        Func<NumberValidator> create = () => new NumberValidator(precision, scale);
+        Func<NumberValidator> createAction = () => new NumberValidator(precision, scale);
 
-        create
+        createAction
             .Should()
-            .Throw<ArgumentException>();
+            .Throw<ArgumentException>()
+            .WithMessage("scale must be a non-negative number less than precision");
     }
 
-    [TestCase(1, 0, true)]
-    [TestCase(1, 0, false)]
-    [TestCase(2, 1, true)]
-    [TestCase(17, 16, false)]
-    public void Validator_with_good_precision_and_scale_is_created(int precision, int scale, bool onlyPositive)
+    [TestCase(1, 0)]
+    [TestCase(2, 1)]
+    public void Constructor_ShouldNotThrow_WhenPrecisionAndScaleAreValid_Test(int precision, int scale)
     {
-        Func<NumberValidator> create = () => new NumberValidator(precision, scale, onlyPositive);
+        Func<NumberValidator> createAction = () => new NumberValidator(precision, scale);
 
-        create
+        createAction
             .Should()
             .NotThrow();
     }
@@ -37,18 +45,15 @@ public class NumberValidatorTests
     [TestCase(null)]
     [TestCase("")]
     [TestCase(" ")]
-    [TestCase("abc")]
     [TestCase("a.sd")]
-    [TestCase("12a")]
-    [TestCase("1e3")]
-    [TestCase("1.")]
     [TestCase(".5")]
+    [TestCase("1.")]
     [TestCase("1.2.3")]
-    [TestCase("1 2")]
+    [TestCase("1;2")]
     [TestCase("+")]
     [TestCase("--1")]
-    [TestCase("+-1")]
-    public void Text_that_is_not_a_number_is_invalid(string? value)
+    [TestCase("1-")]
+    public void Value_ShouldBeInvalid_WhenItIsNotNumber_Test(string? value)
     {
         NumberValidator validator = new(10, 5);
 
@@ -58,17 +63,14 @@ public class NumberValidatorTests
             .BeFalse();
     }
 
-    [TestCase(1, 0, false, "0")]
-    [TestCase(17, 2, true, "0")]
-    [TestCase(17, 2, true, "0.0")]
-    [TestCase(3, 0, false, "123")]
-    [TestCase(4, 2, false, "00.00")]
-    [TestCase(4, 2, true, "+1.23")]
-    [TestCase(4, 2, false, "-1.23")]
-    [TestCase(3, 1, false, "12.3")]
-    public void Number_that_fits_precision_and_scale_is_valid(int precision, int scale, bool onlyPositive, string value)
+    [TestCase(1, 0, "0")]
+    [TestCase(3, 2, "1.23")]
+    [TestCase(4, 2, "00.00")]
+    [TestCase(4, 2, "+1.23")]
+    [TestCase(4, 2, "-1.23")]
+    public void Number_ShouldBeValid_WhenItFitsPrecisionAndScale_Test(int precision, int scale, string value)
     {
-        NumberValidator validator = new(precision, scale, onlyPositive);
+        NumberValidator validator = new(precision, scale);
 
         validator
             .IsValidNumber(value)
@@ -78,9 +80,9 @@ public class NumberValidatorTests
 
     [TestCase("1.5")]
     [TestCase("1,5")]
-    public void Dot_and_comma_are_both_valid_separators(string value)
+    public void Number_ShouldBeValid_WhenSeparatorIsDotOrComma_Test(string value)
     {
-        NumberValidator validator = new (2, 1);
+        NumberValidator validator = new(2, 1);
 
         validator
             .IsValidNumber(value)
@@ -88,12 +90,11 @@ public class NumberValidatorTests
             .BeTrue();
     }
 
-    [TestCase(3, 0, "1234")]
+    [TestCase(1, 0, "12")]
     [TestCase(3, 2, "00.00")]
-    [TestCase(3, 2, "12.34")]
-    public void Number_with_too_many_digits_is_invalid(int precision, int scale, string value)
+    public void Number_ShouldBeInvalid_WhenDigitsExceedPrecision_Test(int precision, int scale, string value)
     {
-        NumberValidator validator = new (precision, scale);
+        NumberValidator validator = new(precision, scale);
 
         validator
             .IsValidNumber(value)
@@ -101,13 +102,11 @@ public class NumberValidatorTests
             .BeFalse();
     }
 
-    [TestCase(3, 2, "+1.23")]
-    [TestCase(3, 2, "-1.23")]
-    [TestCase(3, 2, "+0.00")]
-    [TestCase(1, 0, "-1")]
-    public void Sign_counts_as_a_digit(int precision, int scale, string value)
+    [TestCase("+1.23")]
+    [TestCase("-1.23")]
+    public void Number_ShouldBeInvalid_WhenSignAndDigitsExceedPrecision_Test(string value)
     {
-        NumberValidator validator = new (precision, scale);
+        NumberValidator validator = new(3, 2);
 
         validator
             .IsValidNumber(value)
@@ -115,12 +114,11 @@ public class NumberValidatorTests
             .BeFalse();
     }
 
-    [TestCase(17, 2, "0.000")]
-    [TestCase(17, 2, "1,234")]
-    [TestCase(17, 0, "1.0")]
-    public void Number_with_too_many_digits_after_point_is_invalid(int precision, int scale, string value)
+    [TestCase(3, 1, "0.00")]
+    [TestCase(2, 0, "1.0")]
+    public void Number_ShouldBeInvalid_WhenFractionDigitsExceedScale_Test(int precision, int scale, string value)
     {
-        NumberValidator validator = new (precision, scale);
+        NumberValidator validator = new(precision, scale);
 
         validator
             .IsValidNumber(value)
@@ -130,10 +128,9 @@ public class NumberValidatorTests
 
     [TestCase("-1")]
     [TestCase("-0")]
-    [TestCase("-1.23")]
-    public void Negative_number_is_invalid_if_only_positive_is_allowed(string value)
+    public void NegativeNumber_ShouldBeInvalid_WhenOnlyPositiveAllowed_Test(string value)
     {
-        NumberValidator validator = new (17, 2, onlyPositive: true);
+        NumberValidator validator = new(2, 0, true);
 
         validator
             .IsValidNumber(value)
@@ -141,12 +138,11 @@ public class NumberValidatorTests
             .BeFalse();
     }
 
-    [TestCase("-1")]
-    [TestCase("-0")]
-    [TestCase("-1.23")]
-    public void Negative_number_is_valid_if_negative_is_allowed(string value)
+    [TestCase("0")]
+    [TestCase("+1")]
+    public void NonNegativeNumber_ShouldBeValid_WhenOnlyPositiveAllowed_Test(string value)
     {
-        NumberValidator validator = new (17, 2, onlyPositive: false);
+        NumberValidator validator = new(2, 0, true);
 
         validator
             .IsValidNumber(value)

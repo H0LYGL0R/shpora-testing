@@ -7,42 +7,35 @@ namespace HomeExercise.Tasks.ObjectComparison;
 
 public class ObjectComparison
 {
-    // ReSharper disable once InconsistentNaming
-    private static readonly Person _VasiliTheThirdTsar = 
-        new ("Vasili III of Russia", 28, 170, 60, null!);   
-    
-    // ReSharper disable once InconsistentNaming
-    private static readonly Person _IvanTheTerribleTsar = 
-        new ("Ivan IV The Terrible", 54, 170, 70, _VasiliTheThirdTsar);
-    
+    private static readonly Person VasiliTheThirdTsar =
+        new("Vasili III of Russia", 28, 170, 60, null!);
+
+    private static readonly Person IvanTheTerribleTsar =
+        new("Ivan IV The Terrible", 54, 170, 70, VasiliTheThirdTsar);
+
     [Test]
     [Description("Проверка текущего царя")]
-    public void Current_tsar_is_equal_to_expected() //Тесты проименовал по совету Владимира Хорикова
-                                                    //(значимый деятель C#-мира, обладает Microsoft MVP
-                                                    //(т.е. его большой вклад признан Microsoft))
-                                                    //из книги "Принципы юнит-тестирования".
-                                                    //Преподаватель, когда я спросил его о таком стиле именования,
-                                                    //ответил, что у них "пишут названия тестов на русском".
-                                                    //Хотел бы получить ваш комментарий. 
+    public void CurrentTsar_ShouldBeEqualTo_TsarFromRegistry_Test()
     {
         Person actualTsar = TsarRegistry.GetCurrentTsar();
-        Person expectedTsar = _IvanTheTerribleTsar;
+        Person expectedTsar = IvanTheTerribleTsar;
 
-        actualTsar.Should()
+        actualTsar
+            .Should()
             .BeEquivalentTo(expectedTsar, config => config
-            .Excluding((IMemberInfo member) => member.Name == nameof(Person.Id)));
+                .Excluding((IMemberInfo member) => member.Name == nameof(Person.Id)));
     }
 
     [Test]
     [Description("Альтернативное решение. Какие у него недостатки?")]
-    public void Current_tsar_is_equal_to_expected_with_custom_equality()
+    public void CurrentTsar_ShouldBeEqualTo_TsarFromRegistry_WithCustomEquality_Test()
     {
         Person actualTsar = TsarRegistry.GetCurrentTsar();
-        Person expectedTsar = _IvanTheTerribleTsar;
+        Person expectedTsar = IvanTheTerribleTsar;
 
         // Какие недостатки у такого подхода?
-        //Это решение нарушает OCP. Если в Person появится новое поле, придётся менять AreEqual.
-        //Моё решение обеспечивает расширяемость.
+        // Это решение нарушает OCP. Если в Person появится новое поле, придётся менять AreEqual.
+        // Моё решение обеспечивает расширяемость.
         ClassicAssert.True(AreEqual(actualTsar, expectedTsar));
     }
 
@@ -57,5 +50,4 @@ public class ObjectComparison
             && actual.Weight == expected.Weight
             && AreEqual(actual.Parent, expected.Parent);
     }
-    
 }
